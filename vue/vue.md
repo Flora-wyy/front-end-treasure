@@ -44,8 +44,6 @@ mounted时候自动添加一个watcher, 表达式时render函数       �
   1、immediate，表示第一次渲染的时候是否要执行这个函数
   2、deep，表示监听一个对象的时候，是否要监听对象的属性变化
 
-
-
 # Vnode
 Update触发render获取this._vnode与新渲染的vnode进行对比  
 模板解析》ast语法树》ast语法转换render函数字符串》render函数  
