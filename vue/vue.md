@@ -30,6 +30,8 @@ mounted时候自动添加一个watcher, 表达式时render函数       �
 3、当data值变化后，会触发setter，通知dep数组里的所有watcher执行update，这里会通过nextTick方法派发到微任务或者宏任务里执行后生成新的Vnode，与old Vnode patch之后再进行DOM更新。
 
 # diff
+原理是先同层比较，再比较子节点，重点比较新旧节点都有子节点的情况（核心diff），采用双端比较的算法，同时从新旧节点的两端开始比较。同时借助key值找到可复用节点，再进行相关操作。
+具体过程如下：
 1、只比较同层新旧节点，判断是否同一节点，如果是就进行PatchVnode，
 2、PatchVnode主要逻辑是如果新节点是文本就替换；不是的话，判断是否有有子节点并且不是同一个对象进行updateChildren
 3、updateChildren使用了双指针来标记新老节点children索引，然后一一判断，如果是同一节点就再进入PatchVnode递归
@@ -44,6 +46,21 @@ mounted时候自动添加一个watcher, 表达式时render函数       �
   1、immediate，表示第一次渲染的时候是否要执行这个函数
   2、deep，表示监听一个对象的时候，是否要监听对象的属性变化
 
+<<<<<<< HEAD:vue/vue.md
+=======
+
+# watch 原理
+watch是vue提供的监听器，用于对data的数据进行监听。非常适用于当数据变化时执行异步或开销比较大的操作。
+1、初始化时会对watch对象进行遍历，当对象的属性值为数组时，则遍历数组给数组的每一项创建一个watcher；如果对象属性值不是数组则直接创建watcher。
+2、然后watcher初始化的时候，会把监听到的值缓存在watcher.value里，因此会触发对应data中的getter进行依赖收集，就是把当前的user-watcher放入到data对应的dep数组里
+3、当data对应值发生变动时，会触发setter，执行dep.notify方法，会通知所有收集的依赖watcher，然后执行watcher的回调，也就是watch中的监听函数。
+## deep的作用
+当deep为true时，它会⼀层层遍历给对象的所有属性都加上这个监听函数，这样可以检测到对象的每个属性变化，但是这样做会造成更⼤的性能开销。  
+优化：可以使⽤字符串监听，即给对象会改变的属性指定该监听器，这样只有遇到该属性才会给其设置监听器，⽽不是给对象的所有属性都加上监听函数。  
+
+
+
+>>>>>>> 10bf3bf (feat:更新目录):vue/3.vue.md
 # Vnode
 Update触发render获取this._vnode与新渲染的vnode进行对比  
 模板解析》ast语法树》ast语法转换render函数字符串》render函数  
