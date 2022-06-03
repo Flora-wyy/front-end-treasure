@@ -10,6 +10,9 @@ css样式dom文档是全局生效的，非常容易出现：样式重名，被�
   .b_conainer {}
 ```
 
+### shadow Dom
+element.attachShadow({open: true})
+
 #### css module
 通过给选择器加上特殊的属性来实现
 如vue sfc中style加上scoped属性，在dom上添加data-v-XXX属性作为唯一标识
@@ -24,4 +27,3 @@ css样式dom文档是全局生效的，非常容易出现：样式重名，被�
   /* 该类会被转为.main[data-v-XXX] */
 </style>
 ```
-webpack是用
