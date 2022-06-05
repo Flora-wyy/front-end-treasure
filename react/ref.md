@@ -33,6 +33,18 @@ class Component {
     return <div ref={(elm)=> this.el = elm}>
   }
 }
+
+// 类组件可以直接获取类实例，函数要使用useImperativeHandle
+const FancyInput = forwardRef((props, ref) {
+  const inputRef = useRef();
+  useImperativeHandle(ref, () => ({
+    focus: () => {
+      inputRef.current.focus();
+    }
+  }));
+  return <input ref={inputRef} ... />;
+});
+
 ```
 
 
