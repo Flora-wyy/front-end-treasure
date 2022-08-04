@@ -20,7 +20,7 @@ HMR runtime（同步）应用更新。
 更新发生变更的chunk  
 
 ### 在模块中  
-通常是各种loader已经集成HMR API实现更新补丁
+通常是各种loader已经集成HMR API实现更新补丁, 比如style变化了通知style-loader追加样式
 
 ### 参考资料
 https://baijiahao.baidu.com/s?id=1710928200156345206&wfr=spider&for=pc  

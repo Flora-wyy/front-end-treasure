@@ -1,0 +1,4 @@
+这就解释了函数式组件为什么可以通过hooks改变状态，实际上就是修改了对应fiber节点的memoziedStat这就解释了函数式组件为什么可以通过hooks改变状态，实际上就是修改了对应fiber节点的memoziedState
+
+### 解决了什么问题
+通常组件已经无法拆分成更小细粒度了，副作用充斥的难以理解，didMount/unmount/receviceProp/等逻辑不相关的耦合在一起

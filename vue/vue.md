@@ -12,9 +12,20 @@ observe化data 进入响应式流程
 8、callHook created   
 9、mount挂载组件   
 
+
+
 Mixin init state events lifecycle render  
 Vue只会维护自己vnode 其他jquery加载的不维护  
 State set delete watcher 
+
+## 声明周期
+
+beforeCreate init event liftcycle 后
+create  init injection state
+
+beforemount 
+this.el 生成
+mount
 
 # vue响应式流程  
 1、数据观察，通过对象上的__ob__属性来确定是否对象已经被观察, data所有属性observe化  
@@ -28,6 +39,16 @@ mounted时候自动添加一个watcher, 表达式时render函数       �
 1、初始化时，会把data的所有属性通过Object.defineProperty拦截get、set使其observer化，并声明一个订阅者数组dep用于依赖收集。
 2、render函数执行的时候，会获取data值，此时会触发getter，然后会把渲染watcher放入dep数组里，完成依赖收集。
 3、当data值变化后，会触发setter，通知dep数组里的所有watcher执行update，这里会通过nextTick方法派发到微任务或者宏任务里执行后生成新的Vnode，与old Vnode patch之后再进行DOM更新。
+
+function sameVnode (a, b) {
+  return (
+    a.key === b.key &&
+    a.tag === b.tag &&
+    a.isComment === b.isComment &&
+    isDef(a.data) === isDef(b.data) &&
+    sameInputType(a, b)
+  )
+}
 
 # diff
 原理是先同层比较，再比较子节点，重点比较新旧节点都有子节点的情况（核心diff），采用双端比较的算法，同时从新旧节点的两端开始比较。同时借助key值找到可复用节点，再进行相关操作。
@@ -66,10 +87,20 @@ update后新老节点进行对比，只对比同层节点，判断当前节点�
 语法单元  
 关键字 标识符 运算符 数字 字符串 空格 注释   
 
-# Vuex
-vue状态管理 共享数据抽离  
-Vuex注入 init钩子中  
-所有子组件的store都是父组件中获取  
-Commit通知所有订阅者更新  
-通过vue的响应式实例化一个vue对象把state绑定上去  
-没有命名空间的时候会触发所有module上的方法  
+## vue 2 3区别
+1、重构响应式系统，使用Proxy替换Object.defineProperty，使用Proxy优势：
+
+可直接监听数组类型的数据变化
+ 监听的目标为对象本身，不需要像Object.defineProperty一样遍历每个属性，有一定的性能提升
+ 可拦截apply、ownKeys、has等13种方法，而Object.defineProperty不行
+ 直接实现对象属性的新增/删除
+2、新增Composition API，更好的逻辑复用和代码组织
+
+3、重构 Virtual DOM
+
+模板编译时的优化，将一些静态节点编译成常量
+slot优化，将slot编译为lazy函数，将slot的渲染的决定权交给子组件
+ 模板中内联事件的提取并重用（原本每次渲染都重新生成内联函数）
+4、代码结构调整，更便于Tree shaking，使得体积更小
+
+5、使用Typescript替换Flow
