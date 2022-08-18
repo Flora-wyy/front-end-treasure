@@ -35,7 +35,60 @@ offscreen，下一次render时或scroll时才执行
 workLoop中拿出一个任务，每执行完一个‘执行单元‘，就检查一下剩余时间是否充足，如果充足就进行执行下一个执行单元，反之则停止执行，保存现场，等下一次有执行权时恢复:
 
 
-## fiber
+### fiber结构
+```javascript
+interface Fiber {
+  /**
+   * ⚛️ 节点的类型信息
+   */
+  // 标记 Fiber 类型, 例如函数组件、类组件、宿主组件
+  tag: WorkTag,
+  // 节点元素类型, 是具体的类组件、函数组件、宿主组件(字符串)
+  type: any,
+
+  /**
+   * ⚛️ 结构信息
+   */ 
+  return: Fiber | null,
+  child: Fiber | null,
+  sibling: Fiber | null,
+  // 子节点的唯一键, 即我们渲染列表传入的key属性
+  key: null | string,
+
+  /**
+   * ⚛️ 节点的状态
+   */
+  // 节点实例(状态)：
+  //        对于宿主组件，这里保存宿主组件的实例, 例如DOM节点。
+  //        对于类组件来说，这里保存类组件的实例
+  //        对于函数组件说，这里为空，因为函数组件没有实例
+  stateNode: any,
+  // 新的、待处理的props
+  pendingProps: any,
+  // 上一次渲染的props
+  memoizedProps: any, // The props used to create the output.
+  // 上一次渲染的组件状态
+  memoizedState: any,
+  /**
+   * ⚛️ 副作用
+   */
+  // 当前节点的副作用类型，例如节点更新、删除、移动
+  effectTag: SideEffectTag,
+  // 和节点关系一样，React 同样使用链表来将所有有副作用的Fiber连接起来
+  nextEffect: Fiber | null,
+
+  /**
+   * ⚛️ 替身
+   * 指向旧树中的节点
+   */
+  alternate: Fiber | null,
+}
+
+作者：荒山
+链接：https://juejin.cn/post/6844903975112671239
+来源：稀土掘金
+著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。
+```
 Fiber 包含的属性可以划分为 5 个部分:
 组成|内容
 --|--
@@ -46,11 +99,98 @@ Fiber 包含的属性可以划分为 5 个部分:
 替身 | React 在 Reconciliation 过程中会构建一颗新的树(官方称为workInProgress tree，WIP树)，可以认为是一颗表示当前工作进度的树。还有一颗表示已渲染界面的旧树，React就是一边和旧树比对，一边构建WIP树的。 alternate 指向旧树的同等节点。
 
 
+### fiber 如何循环任务
+
+```javascript
+
+// 1️⃣ performWork 会拿到一个Deadline，表示剩余时间
+function performWork(deadline) {
+
+  // 2️⃣ 循环取出updateQueue中的任务
+  while (updateQueue.length > 0 && deadline.timeRemaining() > ENOUGH_TIME) {
+    workLoop(deadline);
+  }
+
+  // 3️⃣ 如果在本次执行中，未能将所有任务执行完毕，那就再请求浏览器调度
+  if (updateQueue.length > 0) {
+    requestIdleCallback(performWork);
+  }
+}
+
+// 保存当前的处理现场
+let nextUnitOfWork: Fiber | undefined // 保存下一个需要处理的工作单元
+let topWork: Fiber | undefined        // 保存第一个工作单元
+
+function workLoop(deadline: IdleDeadline) {
+  // updateQueue中获取下一个或者恢复上一次中断的执行单元
+  if (nextUnitOfWork == null) {
+    nextUnitOfWork = topWork = getNextUnitOfWork();
+  }
+
+  // 🔴 每执行完一个执行单元，检查一次剩余时间
+  // 如果被中断，下一次执行还是从 nextUnitOfWork 开始处理
+  while (nextUnitOfWork && deadline.timeRemaining() > ENOUGH_TIME) {
+    // 下文我们再看performUnitOfWork
+    nextUnitOfWork = performUnitOfWork(nextUnitOfWork, topWork);
+  }
+
+  // 提交工作，下文会介绍
+  if (pendingCommit) {
+    commitAllWork(pendingCommit);
+  }
+}
+
+
+// 保存当前的处理现场
+let nextUnitOfWork: Fiber | undefined // 保存下一个需要处理的工作单元
+let topWork: Fiber | undefined        // 保存第一个工作单元
+
+function workLoop(deadline: IdleDeadline) {
+  // updateQueue中获取下一个或者恢复上一次中断的执行单元
+  if (nextUnitOfWork == null) {
+    nextUnitOfWork = topWork = getNextUnitOfWork();
+  }
+
+  // 🔴 每执行完一个执行单元，检查一次剩余时间
+  // 如果被中断，下一次执行还是从 nextUnitOfWork 开始处理
+  while (nextUnitOfWork && deadline.timeRemaining() > ENOUGH_TIME) {
+    // 下文我们再看performUnitOfWork
+    nextUnitOfWork = performUnitOfWork(nextUnitOfWork, topWork);
+  }
+
+  // 提交工作，下文会介绍
+  if (pendingCommit) {
+    commitAllWork(pendingCommit);
+  }
+}
+
+```
+
 ### fiber 如何对比
+
+```javascript
+function beginWork(fiber: Fiber): Fiber | undefined {
+  if (fiber.tag === WorkTag.HostComponent) {
+    // 宿主节点diff
+    diffHostComponent(fiber)
+  } else if (fiber.tag === WorkTag.ClassComponent) {
+    // 类组件节点diff
+    diffClassComponent(fiber)
+  } else if (fiber.tag === WorkTag.FunctionComponent) {
+    // 函数组件节点diff
+    diffFunctionalComponent(fiber)
+  } else {
+    // ... 其他类型节点，省略
+  }
+
+// 各种节点对比的话，流程类似，都是先判断stateNode不存在就新增一个
+// 宿主组件/类组件/函数组件，非宿主节点（DOM节点）还有判断声明周期，其余再比较子节点
+```
 
 ## 双缓冲
 WIP 树构建这种技术类似于图形化领域的'双缓存(Double Buffering)'技术, 图形绘制引擎一般会使用双缓冲技术，先将图片绘制到一个缓冲区，再一次性传递给屏幕进行显示，这样可以防止屏幕抖动，优化渲染性能。
 放到React 中，WIP树就是一个缓冲，它在Reconciliation 完毕后一次性提交给浏览器进行渲染。它可以减少内存分配和垃圾回收，WIP 的节点不完全是新的，比如某颗子树不需要变动，React会克隆复用旧树中的子树。
 双缓存技术还有另外一个重要的场景就是异常的处理，比如当一个节点抛出异常，仍然可以继续沿用旧树的节点，避免整棵树挂掉。
+
 
 [参考 https://juejin.cn/post/6844903975112671239#heading-1](https://juejin.cn/post/6844903975112671239#heading-1)
