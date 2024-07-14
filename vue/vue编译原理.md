@@ -1,0 +1,2 @@
+正则和算法生成Ast抽象语法树
+generate是将AST语法树转化成render funtion字符串的过程，得到结果是render的字符串以及staticRenderFns字符串
